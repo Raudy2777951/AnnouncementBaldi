@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<!-- Created with https://studio.penguinmod.com/PenguinMod-Packager/ -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- We only include this to explicitly loosen the CSP of various packager environments. It does not provide any security. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:">
+  <title>Announcement Sender Discord</title>
+  <style>
+    body {
+      color: #ffffff;
+      font-family: sans-serif;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    :root, body.is-fullscreen {
+      background-color: #000000;
+    }
+    [hidden] {
+      display: none !important;
+    }
+    h1 {
+      font-weight: normal;
+    }
+    a {
+      color: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    #app, #loading, #error, #launch {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: default;
+      user-select: none;
+      -webkit-user-select: none;
+      background-color: #000000;
+    }
+    #launch {
+      background-color: rgba(0, 0, 0, 0.7);
+      cursor: pointer;
+    }
+    .green-flag {
+      width: 80px;
+      height: 80px;
+      padding: 16px;
+      border-radius: 100%;
+      background: rgba(255, 255, 255, 0.75);
+      border: 3px solid hsla(0, 100%, 100%, 1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    #loading {
+      
+    }
+    .progress-bar-outer {
+      border: 1px solid currentColor;
+      height: 10px;
+      width: 200px;
+      max-width: 200px;
+    }
+    .progress-bar-inner {
+      height: 100%;
+      width: 0;
+      background-color: currentColor;
+    }
+    .loading-text, noscript {
+      font-weight: normal;
+      font-size: 36px;
+      margin: 0 0 16px;
+    }
+    .loading-image {
+      margin: 0 0 16px;
+    }
+    #error-message, #error-stack {
+      font-family: monospace;
+      max-width: 600px;
+      white-space: pre-wrap;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    #error-stack {
+      text-align: left;
+      max-height: 200px;
+      overflow: auto;
+    }
+    .control-button {
+      width: 2rem;
+      height: 2rem;
+      padding: 0.375rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: pointer;
+      border: 0;
+      border-radius: 4px;
+    }
+    .control-button:hover {
+      background: #00c3ff26;
+    }
+    .control-button.active {
+      background: #00c3ff59;
+    }
+    .fullscreen-button {
+      background: white !important;
+    }
+    .standalone-fullscreen-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 0 0 0 4px;
+      padding: 4px;
+      cursor: pointer;
+    }
+    .sc-canvas {
+      cursor: auto;
+    }
+    .sc-monitor-root[data-opcode^="data_"] .sc-monitor-value-color {
+      background-color: #ff8c1a;
+    }
+    .sc-monitor-row-value-outer {
+      background-color: #fc662c;
+    }
+    .sc-monitor-row-value-editing .sc-monitor-row-value-outer {
+      background-color: #e25b27;
+    }
+    
+  </style>
+  <meta name="theme-color" content="#000000">
+  
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="launch" class="screen" hidden title="Click to start">
+    <div class="green-flag">
+      <svg viewBox="0 0 16.63 17.5" width="42" height="44">
+        <defs><style>.cls-1,.cls-2{fill:#007AF4;stroke:#003080;stroke-linecap:round;stroke-linejoin:round;}.cls-2{stroke-width:1.5px;}</style></defs>
+        <path class="cls-1" d="M.75,2A6.44,6.44,0,0,1,8.44,2h0a6.44,6.44,0,0,0,7.69,0V12.4a6.44,6.44,0,0,1-7.69,0h0a6.44,6.44,0,0,0-7.69,0"/>
+        <line class="cls-2" x1="0.75" y1="16.75" x2="0.75" y2="0.75"/>
+      </svg>
+    </div>
+  </div>
+
+  <div id="loading" class="screen">
+    <noscript>Enable JavaScript</noscript>
+    <h1 class="loading-text">Loading</h1>
+    
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="loading-inner"></div></div>
+  </div>
+
+  <div id="error" class="screen" hidden>
+    <h1>Error</h1>
+    <details>
+      <summary id="error-message"></summary>
+      <p id="error-stack"></p>
+    </details>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    const appElement = document.getElementById('app');
+    const launchScreen = document.getElementById('launch');
+    const loadingScreen = document.getElementById('loading');
+    const loadingInner = document.getElementById('loading-inner');
+    const errorScreen = document.getElementById('error');
+    const errorScreenMessage = document.getElementById('error-message');
+    const errorScreenStack = document.getElementById('error-stack');
+
+    const handleError = (error) => {
+      console.error(error);
+      if (!errorScreen.hidden) return;
+      errorScreen.hidden = false;
+      errorScreenMessage.textContent = '' + error;
+      let debug = error && error.stack || 'no stack';
+      debug += '\nUser agent: ' + navigator.userAgent;
+      errorScreenStack.textContent = debug;
+    };
+    const setProgress = (progress) => {
+      if (loadingInner) loadingInner.style.width = progress * 100 + '%';
+    };
+    const interpolate = (a, b, t) => a + t * (b - a);
+
+    try {
+      setProgress(0.1);
+
+      const scaffolding = new Scaffolding.Scaffolding();
+      scaffolding.width = 640;
+      scaffolding.height = 360;
+      scaffolding.resizeMode = "preserve-ratio";
+      scaffolding.editableLists = false;
+      scaffolding.usePackagedRuntime = true;
+      scaffolding.setup();
+      scaffolding.appendTo(appElement);
+
+      const vm = scaffolding.vm;
+      window.scaffolding = scaffolding;
+      window.vm = scaffolding.vm;
+      window.Scratch = {
+        vm,
+        renderer: vm.renderer,
+        audioEngine: vm.runtime.audioEngine,
+        bitmapAdapter: vm.runtime.v2BitmapAdapter,
+        videoProvider: vm.runtime.ioDevices.video.provider
+      };
+
+      scaffolding.setUsername("player####".replace(/#/g, () => Math.floor(Math.random() * 10)));
+      scaffolding.setAccentColor("#00c3ff");
+
+      try {
+        scaffolding.addCloudProvider(new Scaffolding.Cloud.WebSocketProvider(["wss://clouddata.turbowarp.org","wss://clouddata.turbowarp.xyz"], "p4-@AnnouncementSender.pmp"));
+      } catch (error) {
+        console.error(error);
+      }
+
+      vm.setTurboMode(false);
+      if (vm.setInterpolation) vm.setInterpolation(false);
+      if (vm.setFramerate) vm.setFramerate(30);
+      if (vm.renderer.setUseHighQualityRender) vm.renderer.setUseHighQualityRender(false);
+      if (vm.setRuntimeOptions) vm.setRuntimeOptions({
+        fencing: true,
+        miscLimits: true,
+        maxClones: 300,
+        dangerousOptimizations: false
+      });
+      if (vm.setCompilerOptions) vm.setCompilerOptions({
+        enabled: true,
+        warpTimer: false
+      });
+      if (vm.renderer.setMaxTextureDimension) vm.renderer.setMaxTextureDimension(2048);
+
+      if (typeof ScaffoldingAddons !== 'undefined') {
+        ScaffoldingAddons.run(scaffolding, {"gamepad":false,"pointerlock":false,"specialCloudBehaviors":false,"unsafeCloudBehaviors":false,"pause":false});
+      }
+
+      scaffolding.setExtensionSecurityManager({
+        getSandboxMode: () => 'unsandboxed',
+        canLoadExtensionFromProject: () => true
+      });
+      for (const extension of ["data:text/javascript;base64,Ly8gUGVuZ3VpbiBIb29rCi8vIEJ5IE11YmlMb3AgZnJvbSBSdWJ5IFRlYW0gKGh0dHBzOi8vcnVieXRlYW0udGVjaC8pCi8vIEkgZGlkbid0IHNlZSBhbnkgZXh0ZW5zaW9uIHdpdGggZW1iZWQgc3VwcG9ydCBzbyB5ZWFoIGkgbWFkZSBpdC4KCihmdW5jdGlvbiAoU2NyYXRjaCkgewoKICAgIGNsYXNzIE11Ymlsb3BQZW5ndWluSG9vayB7CiAgICAgIGVtYmVkUHJvcGVydGllcyA9IHt9OwogIAogICAgICBnZXRJbmZvKCkgewogICAgICAgIHJldHVybiB7CiAgICAgICAgICBpZDogJ3Blbmd1aW5ob29rJywKICAgICAgICAgIG5hbWU6ICdQZW5ndWluSG9vaycsCiAgICAgICAgICBjb2xvcjE6ICIjMDJiNGUwIiwKICAgICAgICAgIGNvbG9yMjogIiMwMmI0ZTAiLAogICAgICAgICAgY29sb3IzOiAiIzAyYjRlMCIsCiAgICAgICAgICBibG9ja3M6IFsKICAgICAgICAgICAgewogICAgICAgICAgICAgIG9wY29kZTogJ3NlbmRXZWJob29rJywKICAgICAgICAgICAgICB0ZXh0OiAnc2VuZCB3ZWJob29rIHdpdGggbmFtZSBbTkFNRV0gaWNvbiBbSU1BR0VVUkxdIG1lc3NhZ2UgW01FU1NBR0VdIHRvIHdlYmhvb2sgW1dFQkhPT0tdJywKICAgICAgICAgICAgICBibG9ja1R5cGU6IFNjcmF0Y2guQmxvY2tUeXBlLkNPTU1BTkQsCiAgICAgICAgICAgICAgYXJndW1lbnRzOiB7CiAgICAgICAgICAgICAgICBOQU1FOiB7CiAgICAgICAgICAgICAgICAgIHR5cGU6IFNjcmF0Y2guQXJndW1lbnRUeXBlLlNUUklORywKICAgICAgICAgICAgICAgICAgZGVmYXVsdFZhbHVlOiAndXNlcicKICAgICAgICAgICAgICAgIH0sCiAgICAgICAgICAgICAgICBJTUFHRVVSTDogewogICAgICAgICAgICAgICAgICB0eXBlOiBTY3JhdGNoLkFyZ3VtZW50VHlwZS5TVFJJTkcsCiAgICAgICAgICAgICAgICAgIGRlZmF1bHRWYWx1ZTogJ2h0dHBzOi8vZXhhbXBsZS5jb20vaW1hZ2UuanBnJwogICAgICAgICAgICAgICAgfSwKICAgICAgICAgICAgICAgIE1FU1NBR0U6IHsKICAgICAgICAgICAgICAgICAgdHlwZTogU2NyYXRjaC5Bcmd1bWVudFR5cGUuU1RSSU5HLAogICAgICAgICAgICAgICAgICBkZWZhdWx0VmFsdWU6ICdIZWxsbywgd29ybGQhJwogICAgICAgICAgICAgICAgfSwKICAgICAgICAgICAgICAgIFdFQkhPT0s6IHsKICAgICAgICAgICAgICAgICAgdHlwZTogU2NyYXRjaC5Bcmd1bWVudFR5cGUuU1RSSU5HLAogICAgICAgICAgICAgICAgICBkZWZhdWx0VmFsdWU6ICdodHRwczovL3lvdXIud2ViaG9vay51cmwnCiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgfQogICAgICAgICAgICB9LAogICAgICAgICAgICB7CiAgICAgICAgICAgICAgb3Bjb2RlOiAnc2V0SGV4Q29sb3InLAogICAgICAgICAgICAgIHRleHQ6ICdzZXQgaGV4IGNvbG9yIHRvIFtDT0xPUl0nLAogICAgICAgICAgICAgIGJsb2NrVHlwZTogU2NyYXRjaC5CbG9ja1R5cGUuQ09NTUFORCwKICAgICAgICAgICAgICBhcmd1bWVudHM6IHsKICAgICAgICAgICAgICAgIENPTE9SOiB7CiAgICAgICAgICAgICAgICAgIHR5cGU6IFNjcmF0Y2guQXJndW1lbnRUeXBlLlNUUklORywKICAgICAgICAgICAgICAgICAgZGVmYXVsdFZhbHVlOiAnIzAwMDAwMCcKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0sCiAgICAgICAgICAgIHsKICAgICAgICAgICAgICBvcGNvZGU6ICdzZXROYW1lJywKICAgICAgICAgICAgICB0ZXh0OiAnc2V0IG5hbWUgdG8gW05BTUVdJywKICAgICAgICAgICAgICBibG9ja1R5cGU6IFNjcmF0Y2guQmxvY2tUeXBlLkNPTU1BTkQsCiAgICAgICAgICAgICAgYXJndW1lbnRzOiB7CiAgICAgICAgICAgICAgICBOQU1FOiB7CiAgICAgICAgICAgICAgICAgIHR5cGU6IFNjcmF0Y2guQXJndW1lbnRUeXBlLlNUUklORywKICAgICAgICAgICAgICAgICAgZGVmYXVsdFZhbHVlOiAnUnVieSBVdGlscycKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0sCiAgICAgICAgICAgIHsKICAgICAgICAgICAgICBvcGNvZGU6ICdzZXRUaXRsZScsCiAgICAgICAgICAgICAgdGV4dDogJ3NldCBlbWJlZCB0aXRsZSB0byBbVElUTEVdJywKICAgICAgICAgICAgICBibG9ja1R5cGU6IFNjcmF0Y2guQmxvY2tUeXBlLkNPTU1BTkQsCiAgICAgICAgICAgICAgYXJndW1lbnRzOiB7CiAgICAgICAgICAgICAgICBUSVRMRTogewogICAgICAgICAgICAgICAgICB0eXBlOiBTY3JhdGNoLkFyZ3VtZW50VHlwZS5TVFJJTkcsCiAgICAgICAgICAgICAgICAgIGRlZmF1bHRWYWx1ZTogJ1RpdGxlJwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSwKICAgICAgICAgICAgewogICAgICAgICAgICAgIG9wY29kZTogJ3NldERlc2NyaXB0aW9uJywKICAgICAgICAgICAgICB0ZXh0OiAnc2V0IGVtYmVkIGRlc2NyaXB0aW9uIHRvIFtERVNDUklQVElPTl0nLAogICAgICAgICAgICAgIGJsb2NrVHlwZTogU2NyYXRjaC5CbG9ja1R5cGUuQ09NTUFORCwKICAgICAgICAgICAgICBhcmd1bWVudHM6IHsKICAgICAgICAgICAgICAgIERFU0NSSVBUSU9OOiB7CiAgICAgICAgICAgICAgICAgIHR5cGU6IFNjcmF0Y2guQXJndW1lbnRUeXBlLlNUUklORywKICAgICAgICAgICAgICAgICAgZGVmYXVsdFZhbHVlOiAnRGVzY3JpcHRpb24nCiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgfQogICAgICAgICAgICB9LAogICAgICAgICAgICB7CiAgICAgICAgICAgICAgb3Bjb2RlOiAnc2V0Rm9vdGVyJywKICAgICAgICAgICAgICB0ZXh0OiAnc2V0IGVtYmVkIGZvb3RlciB0byBbRk9PVEVSXScsCiAgICAgICAgICAgICAgYmxvY2tUeXBlOiBTY3JhdGNoLkJsb2NrVHlwZS5DT01NQU5ELAogICAgICAgICAgICAgIGFyZ3VtZW50czogewogICAgICAgICAgICAgICAgRk9PVEVSOiB7CiAgICAgICAgICAgICAgICAgIHR5cGU6IFNjcmF0Y2guQXJndW1lbnRUeXBlLlNUUklORywKICAgICAgICAgICAgICAgICAgZGVmYXVsdFZhbHVlOiAnRm9vdGVyJwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSwKICAgICAgICAgICAgewogICAgICAgICAgICAgIG9wY29kZTogJ3NlbmRXZWJob29rV2l0aEVtYmVkJywKICAgICAgICAgICAgICB0ZXh0OiAnc2VuZCB3ZWJob29rIHdpdGggZW1iZWRzIHRvIHdlYmhvb2sgW1dFQkhPT0tdJywKICAgICAgICAgICAgICBibG9ja1R5cGU6IFNjcmF0Y2guQmxvY2tUeXBlLkNPTU1BTkQsCiAgICAgICAgICAgICAgYXJndW1lbnRzOiB7CiAgICAgICAgICAgICAgICBXRUJIT09LOiB7CiAgICAgICAgICAgICAgICAgIHR5cGU6IFNjcmF0Y2guQXJndW1lbnRUeXBlLlNUUklORywKICAgICAgICAgICAgICAgICAgZGVmYXVsdFZhbHVlOiAnaHR0cHM6Ly95b3VyLndlYmhvb2sudXJsJwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSwKICAgICAgICAgICAgewogICAgICAgICAgICAgICAgYmxvY2tUeXBlOiBTY3JhdGNoLkJsb2NrVHlwZS5MQUJFTCwKICAgICAgICAgICAgICAgIHRleHQ6ICdDdXN0b21pemFibGUgU2VjdGlvbicKICAgICAgICAgICAgfSwKICAgICAgICAgICAgewogICAgICAgICAgICAgICAgb3Bjb2RlOiAnc2VuZGpzb24nLAogICAgICAgICAgICAgICAgYmxvY2tUeXBlOiBTY3JhdGNoLkJsb2NrVHlwZS5DT01NQU5ELAogICAgICAgICAgICAgICAgdGV4dDogJ3NlbmQgdXNpbmcganNvbiBbSlNPTl9EQVRBXSB3ZWJob29rIHVybDogW1dFQkhPT0tdJywKICAgICAgICAgICAgICAgIGFyZ3VtZW50czogewogICAgICAgICAgICAgICAgICBKU09OX0RBVEE6IHsKICAgICAgICAgICAgICAgICAgICB0eXBlOiBTY3JhdGNoLkFyZ3VtZW50VHlwZS5TVFJJTkcsCiAgICAgICAgICAgICAgICAgICAgZGVmYXVsdFZhbHVlOiAneyJjb250ZW50IjogIlNlbnQgd2l0aCBKU09OISEiLCJlbWJlZHMiOiBudWxsLCJhdHRhY2htZW50cyI6IFtdfScKICAgICAgICAgICAgICAgICAgfSwKICAgICAgICAgICAgICAgICAgV0VCSE9PSzogewogICAgICAgICAgICAgICAgICAgIHR5cGU6IFNjcmF0Y2guQXJndW1lbnRUeXBlLlNUUklORywKICAgICAgICAgICAgICAgICAgICBkZWZhdWx0VmFsdWU6ICdodHRwczovL3lvdXIud2ViaG9vay51cmwnCiAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0KICAgICAgICAgIF0KICAgICAgICB9OwogICAgICB9CiAgCiAgICAgIC8vIE5ldyBmdW5jdGlvbnMgZm9yIHNldHRpbmcgaW5kaXZpZHVhbCBlbWJlZCBwcm9wZXJ0aWVzCiAgICAgIHNldFRpdGxlKGFyZ3MpIHsKICAgICAgICB0aGlzLmVtYmVkUHJvcGVydGllcy50aXRsZSA9IGFyZ3MuVElUTEU7CiAgICAgIH0KICAKICAgICAgc2V0RGVzY3JpcHRpb24oYXJncykgewogICAgICAgIHRoaXMuZW1iZWRQcm9wZXJ0aWVzLmRlc2NyaXB0aW9uID0gYXJncy5ERVNDUklQVElPTjsKICAgICAgfQogIAogICAgICBzZXRGb290ZXIoYXJncykgewogICAgICAgIHRoaXMuZW1iZWRQcm9wZXJ0aWVzLmZvb3RlciA9IGFyZ3MuRk9PVEVSOwogICAgICB9CiAgCiAgICAgIHNldEhleENvbG9yKGFyZ3MpIHsKICAgICAgICB0aGlzLmVtYmVkUHJvcGVydGllcy5oZXhDb2xvciA9IGFyZ3MuQ09MT1I7CiAgICAgIH0KICAKICAgICAgc2V0TmFtZShhcmdzKSB7CiAgICAgICAgdGhpcy5lbWJlZFByb3BlcnRpZXMubmFtZSA9IGFyZ3MuTkFNRTsKICAgICAgfQogIAogICAgICBzZW5kV2ViaG9vayhhcmdzKSB7CiAgICAgICAgY29uc3QgbmFtZSA9IGFyZ3MuTkFNRTsKICAgICAgICBjb25zdCBpbWFnZVVybCA9IGFyZ3MuSU1BR0VVUkw7CiAgICAgICAgY29uc3QgbWVzc2FnZSA9IGFyZ3MuTUVTU0FHRTsKICAgICAgICBjb25zdCB3ZWJob29rVXJsID0gYXJncy5XRUJIT09LOwogIAogICAgICAgIGNvbnN0IHBheWxvYWQgPSB7CiAgICAgICAgICB1c2VybmFtZTogbmFtZSwKICAgICAgICAgIGF2YXRhcl91cmw6IGltYWdlVXJsLAogICAgICAgICAgY29udGVudDogbWVzc2FnZQogICAgICAgIH07CiAgCiAgICAgICAgcmV0dXJuIGZldGNoKHdlYmhvb2tVcmwsIHsKICAgICAgICAgIG1ldGhvZDogJ1BPU1QnLAogICAgICAgICAgaGVhZGVyczogewogICAgICAgICAgICAnQ29udGVudC1UeXBlJzogJ2FwcGxpY2F0aW9uL2pzb24nCiAgICAgICAgICB9LAogICAgICAgICAgYm9keTogSlNPTi5zdHJpbmdpZnkocGF5bG9hZCkKICAgICAgICB9KQogICAgICAgIC50aGVuKHJlc3BvbnNlID0+IHsKICAgICAgICAgIGlmICghcmVzcG9uc2Uub2spIHsKICAgICAgICAgICAgY29uc29sZS5lcnJvcignV2ViaG9vayByZXF1ZXN0IGZhaWxlZDonLCByZXNwb25zZS5zdGF0dXNUZXh0KTsKICAgICAgICAgICAgcmV0dXJuICdXZWJob29rIHJlcXVlc3QgZmFpbGVkJzsKICAgICAgICAgIH0KICAgICAgICAgIHJldHVybiAnV2ViaG9vayBzZW50IHN1Y2Nlc3NmdWxseSc7CiAgICAgICAgfSkKICAgICAgICAuY2F0Y2goZXJyb3IgPT4gewogICAgICAgICAgY29uc29sZS5lcnJvcignRXJyb3Igc2VuZGluZyB3ZWJob29rOicsIGVycm9yKTsKICAgICAgICAgIHJldHVybiAnRXJyb3Igc2VuZGluZyB3ZWJob29rJzsKICAgICAgICB9KTsKICAgICAgfQogIAogICAgICBzZW5kV2ViaG9va1dpdGhFbWJlZChhcmdzKSB7CiAgICAgICAgY29uc3QgZW1iZWQgPSB7fTsKICAgICAgICBjb25zdCBuYW1lID0ge307CiAgCiAgICAgICAgaWYgKHRoaXMuZW1iZWRQcm9wZXJ0aWVzLnRpdGxlKSB7CiAgICAgICAgICBlbWJlZC50aXRsZSA9IHRoaXMuZW1iZWRQcm9wZXJ0aWVzLnRpdGxlOwogICAgICAgIH0KICAKICAgICAgICBpZiAodGhpcy5lbWJlZFByb3BlcnRpZXMuZGVzY3JpcHRpb24pIHsKICAgICAgICAgIGVtYmVkLmRlc2NyaXB0aW9uID0gdGhpcy5lbWJlZFByb3BlcnRpZXMuZGVzY3JpcHRpb247CiAgICAgICAgfQogIAogICAgICAgIGlmICh0aGlzLmVtYmVkUHJvcGVydGllcy5mb290ZXIpIHsKICAgICAgICAgIGVtYmVkLmZvb3RlciA9IHsgdGV4dDogdGhpcy5lbWJlZFByb3BlcnRpZXMuZm9vdGVyIH07CiAgICAgICAgfQogIAogICAgICAgIGlmICh0aGlzLmVtYmVkUHJvcGVydGllcy5uYW1lKSB7CiAgICAgICAgICBuYW1lLm5hbWUgPSB0aGlzLmVtYmVkUHJvcGVydGllcy5uYW1lOwogICAgICAgIH0KICAKICAgICAgICBjb25zdCB3ZWJob29rVXJsID0gYXJncy5XRUJIT09LOwogICAgICAgIGNvbnN0IHBheWxvYWQgPSB7CiAgICAgICAgICBlbWJlZHM6IFtlbWJlZF0sCiAgICAgICAgICB1c2VybmFtZTogbmFtZS5uYW1lLAogICAgICAgIH07CiAgCiAgICAgICAgcmV0dXJuIGZldGNoKHdlYmhvb2tVcmwsIHsKICAgICAgICAgIG1ldGhvZDogJ1BPU1QnLAogICAgICAgICAgaGVhZGVyczogewogICAgICAgICAgICAnQ29udGVudC1UeXBlJzogJ2FwcGxpY2F0aW9uL2pzb24nCiAgICAgICAgICB9LAogICAgICAgICAgYm9keTogSlNPTi5zdHJpbmdpZnkocGF5bG9hZCkKICAgICAgICB9KQogICAgICAgIC50aGVuKHJlc3BvbnNlID0+IHsKICAgICAgICAgIGlmICghcmVzcG9uc2Uub2spIHsKICAgICAgICAgICAgY29uc29sZS5lcnJvcignV2ViaG9vayByZXF1ZXN0IHdpdGggZW1iZWRzIGZhaWxlZDonLCByZXNwb25zZS5zdGF0dXNUZXh0KTsKICAgICAgICAgICAgcmV0dXJuICdXZWJob29rIHJlcXVlc3Qgd2l0aCBlbWJlZHMgZmFpbGVkJzsKICAgICAgICAgIH0KICAgICAgICAgIHJldHVybiAnV2ViaG9vayB3aXRoIGVtYmVkcyBzZW50IHN1Y2Nlc3NmdWxseSc7CiAgICAgICAgfSkKICAgICAgICAuY2F0Y2goZXJyb3IgPT4gewogICAgICAgICAgY29uc29sZS5lcnJvcignRXJyb3Igc2VuZGluZyB3ZWJob29rIHdpdGggZW1iZWRzOicsIGVycm9yKTsKICAgICAgICAgIHJldHVybiAnRXJyb3Igc2VuZGluZyB3ZWJob29rIHdpdGggZW1iZWRzJzsKICAgICAgICB9KTsKICAgICAgfQoKICAgICAgc2VuZF9qc29uX2Jsb2NrKGFyZ3MpewogICAgICAgIHRyeSB7cmV0dXJuIGZldGNoKGFyZ3MuV0VCSE9PSywgewogICAgICAgICAgICAgIG1ldGhvZDogIlBPU1QiLAogICAgICAgICAgICAgIGhlYWRlcnM6IHsKICAgICAgICAgICAgICAgICdDb250ZW50LXR5cGUnOiAnYXBwbGljYXRpb24vanNvbicKICAgICAgICAgICAgICB9LAogICAgICAgICAgICAgIGJvZHk6IChhcmdzLkpTT05fREFUQSkKICAgICAgICAgICAgfSkudGhlbihyZXMgPT4gewogICAgICAgICAgICAgIGNvbnNvbGUubG9nKHJlcyk7CiAgICAgICAgICAgIH0pCiAgICAgICAgfQogICAgICBjYXRjaChlcnIpIHt9CiAgICAgIH0KICAgIH0KICAKICAgIFNjcmF0Y2guZXh0ZW5zaW9ucy5yZWdpc3RlcihuZXcgTXViaWxvcFBlbmd1aW5Ib29rKCkpOwp9KShTY3JhdGNoKTsK","data:text/javascript;,(function(Scratch)%20%7B%20%2F%2F%20Name%3A%20Captchas%0A%2F%2F%20ID%3A%20SPcaptcha%0A%2F%2F%20Description%3A%20Captchas%20to%20Check%20if%20Users%20are%20Human%20or%20not%0A%2F%2F%20By%3A%20SharkPool%0A%0A%2F%2F%20Version%20V.1.0.2%0A%0A(function%20(Scratch)%20%7B%0A%20%20%22use%20strict%22%3B%0A%20%20if%20(!Scratch.extensions.unsandboxed)%20throw%20new%20Error(%22Captchas%20Extension%20must%20run%20unsandboxed!%22)%3B%0A%0A%20%20const%20menuIconURI%20%3D%0A%22data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHdpZHRoPSIxMzUuMTM4NjUiIGhlaWdodD0iMTM1LjEzODY1IiB2aWV3Qm94PSIwLDAsMTM1LjEzODY1LDEzNS4xMzg2NSI%2BPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTE3Mi40MzA2NywtMTEyLjQzMDY3KSI%2BPGcgZGF0YS1wYXBlci1kYXRhPSJ7JnF1b3Q7aXNQYWludGluZ0xheWVyJnF1b3Q7OnRydWV9IiBmaWxsLXJ1bGU9Im5vbnplcm8iIHN0cm9rZS1saW5lY2FwPSJidXR0IiBzdHJva2UtbGluZWpvaW49Im1pdGVyIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIHN0cm9rZS1kYXNoYXJyYXk9IiIgc3Ryb2tlLWRhc2hvZmZzZXQ9IjAiIHN0eWxlPSJtaXgtYmxlbmQtbW9kZTogbm9ybWFsIj48cGF0aCBkPSJNMTc1LjkzMDY3LDE4MGMwLC0zNS4zODQ1MSAyOC42ODQ4MSwtNjQuMDY5MzMgNjQuMDY5MzMsLTY0LjA2OTMzYzM1LjM4NDUxLDAgNjQuMDY5MzMsMjguNjg0ODEgNjQuMDY5MzMsNjQuMDY5MzNjMCwzNS4zODQ1MSAtMjguNjg0ODEsNjQuMDY5MzMgLTY0LjA2OTMzLDY0LjA2OTMzYy0zNS4zODQ1MSwwIC02NC4wNjkzMywtMjguNjg0ODEgLTY0LjA2OTMzLC02NC4wNjkzM3oiIGZpbGw9IiM2MDZlOTAiIHN0cm9rZT0iIzMzM2E0ZCIgc3Ryb2tlLXdpZHRoPSI3Ii8%2BPHBhdGggZD0iTTI4MS45OTg1NSwxNzkuOTM4NThjLTYuNDE0LC0wLjA5MyAtMjIuMDE1LC0wLjA2MTIgLTM1LjgyNSwtMC4wMDdsMTAuOTAzLC0xMC45MDNjLTMuMzMzLC01LjIzMDkgLTguOTkzNiwtOC44MzQ4NyAtMTUuNTI0LC05LjM1MDNjLTAuMzYxMSwtMC4xNDAxOCAtMC44NTI1NiwtMC4yMTQ1OCAtMS40ODkzLC0wLjIxNDU4Yy01LjI3MDcsMCAtOS4wODA5LDEuNzE1OCAtMTEuNzcsMy44MTQzYy0yLjU4NTYsMS44MTEgLTQuNzMsNC4yMDg4IC02LjIzOTUsNy4wMDA1bC0xNS40MDMsLTE1LjU2NWM3LjY1OSwtMTAuMDgxMyAxOS43NzUsLTE2LjU5MSAzMy40MTMsLTE2LjU5MWMxMy4xMDUsMCAyNC44MDUsNi4wMTI5IDMyLjQ5NiwxNS40MjdsOS4zOTcxLC05LjM5NzF2MzMuOTkxYzAuMDI3LDAuNTk2MiAwLjA0MDksMS4xOTUyOCAwLjA0MjksMS43OTc2IiBmaWxsPSIjMWMzYWE5IiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIvPjxwYXRoIGQ9Ik0yMzkuODE2MzMsMTM4LjEyNTJjLTAuMDkzMSw2LjQxNCAtMC4wNjEyLDIyLjAxNSAtMC4wMDcsMzUuODI1bC0xMC45MDMsLTEwLjkwM2MtNS4yMzA5LDMuMzMzIC04LjgzNDg3LDguOTkzNiAtOS4zNTAzLDE1LjUyNGMtMC4xNDAxOCwwLjM2MTEgLTAuMjE0NTgsMC44NTI1NiAtMC4yMTQ1OCwxLjQ4OTNjMCw1LjI3MDcgMS43MTU5LDkuMDgwOSAzLjgxNDMsMTEuNzdjMS44MTEsMi41ODU2IDQuMjA4OCw0LjczIDcuMDAwNSw2LjIzOTVsLTE1LjU2NSwxNS40MDNjLTEwLjA4MTIsLTcuNjU5IC0xNi41OTEsLTE5Ljc3NSAtMTYuNTkxLC0zMy40MTNjMCwtMTMuMTA1IDYuMDEyOSwtMjQuODA1IDE1LjQyNywtMzIuNDk2bC05LjM5NzEsLTkuMzk3MWgzMy45OTFjMC41OTYyLC0wLjAyNyAxLjE5NTI4LC0wLjA0MDkgMS43OTc2LC0wLjA0MjkiIGZpbGw9IiM0Mjg1ZjQiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIi8%2BPHBhdGggZD0iTTE5OC4wMDI5NSwxODAuMDYxNDJjNi40MTQsMC4wOTMgMjIuMDE1LDAuMDYxMiAzNS44MjUsMC4wMDdsLTEwLjkwMywxMC45MDNjMy4zMzMsNS4yMzA5IDguOTkzNiw4LjgzNDg3IDE1LjUyNCw5LjM1MDNjMC4zNjExLDAuMTQwMTggMC44NTI1NiwwLjIxNDU4IDEuNDg5MywwLjIxNDU4YzUuMjcwNywwIDkuMDgwOSwtMS43MTU4IDExLjc3LC0zLjgxNDNjMi41ODU2LC0xLjgxMSA0LjczLC00LjIwODggNi4yMzk1LC03LjAwMDVsMTUuNDAzLDE1LjU2NWMtNy42NTksMTAuMDgxMyAtMTkuNzc1LDE2LjU5MSAtMzMuNDEzLDE2LjU5MWMtMTMuMTA1LDAgLTI0LjgwNSwtNi4wMTI5IC0zMi40OTYsLTE1LjQyN2wtOS4zOTcxLDkuMzk3MXYtMzMuOTkxYy0wLjAyNywtMC41OTYyIC0wLjA0MDksLTEuMTk1MjggLTAuMDQyOSwtMS43OTc2IiBmaWxsPSIjYWJhYmFiIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIvPjwvZz48L2c%2BPC9zdmc%2B%22%3B%0A%0A%20%20const%20blockIconURI%20%3D%0A%22data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHdpZHRoPSIxMTcuNTE0MDkiIGhlaWdodD0iMTE3LjUxNDA5IiB2aWV3Qm94PSIwLDAsMTE3LjUxNDA5LDExNy41MTQwOSI%2BPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTE4MS4yNDI5NSwtMTIxLjI0Mjk1KSI%2BPGcgZGF0YS1wYXBlci1kYXRhPSJ7JnF1b3Q7aXNQYWludGluZ0xheWVyJnF1b3Q7OnRydWV9IiBmaWxsLXJ1bGU9Im5vbnplcm8iIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIHN0cm9rZS1saW5lam9pbj0ibWl0ZXIiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgc3Ryb2tlLWRhc2hhcnJheT0iIiBzdHJva2UtZGFzaG9mZnNldD0iMCIgc3R5bGU9Im1peC1ibGVuZC1tb2RlOiBub3JtYWwiPjxwYXRoIGQ9Ik0xODEuMjQyOTUsMjM4Ljc1NzA1di0xMTcuNTE0MDloMTE3LjUxNDA5djExNy41MTQwOXoiIGZpbGw9Im5vbmUiIHN0cm9rZS13aWR0aD0iMCIvPjxwYXRoIGQ9Ik0yODEuOTk4NTUsMTc5LjkzODU4Yy02LjQxNCwtMC4wOTMgLTIyLjAxNSwtMC4wNjEyIC0zNS44MjUsLTAuMDA3bDEwLjkwMywtMTAuOTAzYy0zLjMzMywtNS4yMzA5IC04Ljk5MzYsLTguODM0ODcgLTE1LjUyNCwtOS4zNTAzYy0wLjM2MTEsLTAuMTQwMTggLTAuODUyNTYsLTAuMjE0NTggLTEuNDg5MywtMC4yMTQ1OGMtNS4yNzA3LDAgLTkuMDgwOSwxLjcxNTggLTExLjc3LDMuODE0M2MtMi41ODU2LDEuODExIC00LjczLDQuMjA4OCAtNi4yMzk1LDcuMDAwNWwtMTUuNDAzLC0xNS41NjVjNy42NTksLTEwLjA4MTMgMTkuNzc1LC0xNi41OTEgMzMuNDEzLC0xNi41OTFjMTMuMTA1LDAgMjQuODA1LDYuMDEyOSAzMi40OTYsMTUuNDI3bDkuMzk3MSwtOS4zOTcxdjMzLjk5MWMwLjAyNywwLjU5NjIgMC4wNDA5LDEuMTk1MjggMC4wNDI5LDEuNzk3NiIgZmlsbD0iIzFjM2FhOSIgc3Ryb2tlLXdpZHRoPSIxIi8%2BPHBhdGggZD0iTTIzOS44MTYzMywxMzguMTI1MmMtMC4wOTMxLDYuNDE0IC0wLjA2MTIsMjIuMDE1IC0wLjAwNywzNS44MjVsLTEwLjkwMywtMTAuOTAzYy01LjIzMDksMy4zMzMgLTguODM0ODcsOC45OTM2IC05LjM1MDMsMTUuNTI0Yy0wLjE0MDE4LDAuMzYxMSAtMC4yMTQ1OCwwLjg1MjU2IC0wLjIxNDU4LDEuNDg5M2MwLDUuMjcwNyAxLjcxNTksOS4wODA5IDMuODE0MywxMS43N2MxLjgxMSwyLjU4NTYgNC4yMDg4LDQuNzMgNy4wMDA1LDYuMjM5NWwtMTUuNTY1LDE1LjQwM2MtMTAuMDgxMiwtNy42NTkgLTE2LjU5MSwtMTkuNzc1IC0xNi41OTEsLTMzLjQxM2MwLC0xMy4xMDUgNi4wMTI5LC0yNC44MDUgMTUuNDI3LC0zMi40OTZsLTkuMzk3MSwtOS4zOTcxaDMzLjk5MWMwLjU5NjIsLTAuMDI3IDEuMTk1MjgsLTAuMDQwOSAxLjc5NzYsLTAuMDQyOSIgZmlsbD0iIzQyODVmNCIgc3Ryb2tlLXdpZHRoPSIxIi8%2BPHBhdGggZD0iTTE5OC4wMDI5NSwxODAuMDYxNDJjNi40MTQsMC4wOTMgMjIuMDE1LDAuMDYxMiAzNS44MjUsMC4wMDdsLTEwLjkwMywxMC45MDNjMy4zMzMsNS4yMzA5IDguOTkzNiw4LjgzNDg3IDE1LjUyNCw5LjM1MDNjMC4zNjExLDAuMTQwMTggMC44NTI1NiwwLjIxNDU4IDEuNDg5MywwLjIxNDU4YzUuMjcwNywwIDkuMDgwOSwtMS43MTU4IDExLjc3LC0zLjgxNDNjMi41ODU2LC0xLjgxMSA0LjczLC00LjIwODggNi4yMzk1LC03LjAwMDVsMTUuNDAzLDE1LjU2NWMtNy42NTksMTAuMDgxMyAtMTkuNzc1LDE2LjU5MSAtMzMuNDEzLDE2LjU5MWMtMTMuMTA1LDAgLTI0LjgwNSwtNi4wMTI5IC0zMi40OTYsLTE1LjQyN2wtOS4zOTcxLDkuMzk3MXYtMzMuOTkxYy0wLjAyNywtMC41OTYyIC0wLjA0MDksLTEuMTk1MjggLTAuMDQyOSwtMS43OTc2IiBmaWxsPSIjYWJhYmFiIiBzdHJva2Utd2lkdGg9IjEiLz48L2c%2BPC9nPjwvc3ZnPg%3D%3D%22%3B%0A%0A%20%20const%20vm%20%3D%20Scratch.vm%3B%0A%20%20const%20render%20%3D%20vm.renderer%3B%0A%0A%20%20const%20fontMenu%20%3D%20%5B%0A%20%20%20%20%22Sans%20Serif%22%2C%20%22Serif%22%2C%20%22Handwriting%22%2C%0A%20%20%20%20%22Marker%22%2C%20%22Curly%22%2C%20%22Pixel%22%0A%20%20%5D%3B%0A%0A%20%20const%20allElements%20%3D%20%5B%0A%20%20%20%20%22image%20frame%22%2C%20%22image%20background%22%2C%0A%20%20%20%20%22input%20frame%22%2C%20%22input%20background%22%2C%20%22input%20text%22%2C%0A%20%20%20%20%22button%20frame%22%2C%20%22button%20background%20(hover)%22%2C%20%22button%20background%20(normal)%22%2C%20%22button%20text%22%0A%20%20%5D%3B%0A%0A%20%20const%20xmlEscape%20%3D%20function%20(unsafe)%20%7B%0A%20%20%20%20unsafe%20%3D%20String(unsafe)%3B%0A%20%20%20%20return%20unsafe.replace(%2F%5B%3C%3E%26'%22%5D%2Fg%2C%20c%20%3D%3E%20%7B%0A%20%20%20%20%20%20switch%20(c)%20%7B%0A%20%20%20%20%20%20%20%20case%20%22%3C%22%3A%20return%20%22%26lt%3B%22%3B%0A%20%20%20%20%20%20%20%20case%20%22%3E%22%3A%20return%20%22%26gt%3B%22%3B%0A%20%20%20%20%20%20%20%20case%20%22%26%22%3A%20return%20%22%26amp%3B%22%3B%0A%20%20%20%20%20%20%20%20case%20%22'%22%3A%20return%20%22%26apos%3B%22%3B%0A%20%20%20%20%20%20%20%20case%20%22%5C%22%22%3A%20return%20%22%26quot%3B%22%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D)%3B%0A%20%20%7D%3B%0A%0A%20%20%2F%2F%20Security%20Stuff%0A%20%20let%20internalUserPass%2C%20internalUserAnswer%2C%20internalAnswer%3B%0A%0A%20%20let%20currentCaptcha%20%3D%20null%3B%0A%20%20let%20captchaInfo%20%3D%20%7B%0A%20%20%20%20passed%3A%20false%2C%20difficulty%3A%20%22easy%22%2C%0A%20%20%20%20answer%3A%20%22%22%2C%20userAnswer%3A%20%22%22%2C%0A%20%20%20%20lastImg%3A%20%22%22%0A%20%20%7D%3B%0A%20%20let%20visSetting%20%3D%20%7B%0A%20%20%20%20%2F%2F%20Functions%0A%20%20%20%20autoClose%3A%20true%2C%20focusMode%3A%20true%2C%0A%0A%20%20%20%20%2F%2F%20Visuals%0A%20%20%20%20font%3A%20%22Inherit%22%2C%0A%20%20%20%20%22image%20frame%22%20%3A%20%22%23cccccc%22%2C%20%22image%20background%22%20%3A%20%22%23000000%22%2C%0A%20%20%20%20%22input%20frame%22%20%3A%20%22%23cccccc%22%2C%20%22input%20background%22%20%3A%20%22linear-gradient(%23ffffff%2C%20%23b3b3b3)%22%2C%20%22input%20text%22%20%3A%20%22%23000000%22%2C%0A%20%20%20%20%22button%20frame%22%20%3A%20%22%23cccccc%22%2C%20%22button%20text%22%20%3A%20%22%23000000%22%2C%0A%20%20%20%20%22button%20background%20(hover)%22%20%3A%20%22linear-gradient(%23b3b3b3%2C%20%23ffffff)%22%2C%20%22button%20background%20(normal)%22%20%3A%20%22linear-gradient(%23ffffff%2C%20%23b3b3b3)%22%2C%0A%0A%20%20%20%20%2F%2F%20Effects%3A%20Item%200%3A%20value%2C%20Item%201%2C%20HTML%20unit%0A%20%20%20%20blur%3A%20%5B0%2C%20%22px%22%5D%2C%20brightness%3A%20%5B0%2C%20%22%22%5D%2C%0A%20%20%20%20contrast%3A%20%5B0%2C%20%22%22%5D%2C%20%22hue-rotate%22%3A%20%5B0%2C%20%22deg%22%5D%2C%0A%20%20%20%20invert%3A%20%5B0%2C%20%22%22%5D%2C%20opacity%3A%20%5B0%2C%20%22%22%5D%2C%0A%20%20%20%20saturate%3A%20%5B100%2C%20%22%22%5D%2C%20sepia%3A%20%5B0%2C%20%22%22%5D%2C%0A%20%20%20%20scale%3A%20%5B100%2C%20%22%22%2C%20100%2C%20%22%22%5D%2C%20%20rotate%3A%20%5B90%2C%20%22deg%22%5D%2C%0A%20%20%20%20skewX%3A%20%5B0%2C%20%22deg%22%5D%2C%20skewY%3A%20%5B0%2C%20%22deg%22%5D%0A%20%20%7D%3B%0A%0A%20%20function%20generateCaptchaText(DIFF)%20%7B%0A%20%20%20%20const%20chars%20%3D%20%22ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%22%3B%0A%20%20%20%20let%20captchaText%20%3D%20%22%22%3B%0A%20%20%20%20for%20(let%20i%20%3D%200%3B%20i%20%3C%204%20%2B%20((DIFF%20-%201)%20*%202)%3B%20i%2B%2B)%20%7B%0A%20%20%20%20%20%20captchaText%20%2B%3D%20chars.charAt(Math.floor(Math.random()%20*%20chars.length))%3B%0A%20%20%20%20%7D%0A%20%20%20%20return%20captchaText%3B%0A%20%20%7D%0A%0A%20%20function%20randomHex(DIFF)%20%7B%0A%20%20%20%20const%20rngCom%20%3D%20()%20%3D%3E%20Math.floor(Math.random()%20*%20256)%3B%0A%20%20%20%20let%20darkAmt%20%3D%2035%20*%20(DIFF%20-%201)%3B%0A%20%20%20%20const%20color%20%3D%20%7B%20r%3A%20rngCom()%2C%20g%3A%20rngCom()%2C%20b%3A%20rngCom()%20%7D%3B%0A%20%20%20%20if%20(color.r%20%3C%2080%20%26%26%20color.g%20%3C%2080%20%26%26%20color.b%20%3C%2080)%20darkAmt%20%2B%3D%2080%3B%0A%20%20%20%20color.r%20%3D%20Math.max(50%2C%20color.r%20-%20darkAmt)%3B%0A%20%20%20%20color.g%20%3D%20Math.max(50%2C%20color.g%20-%20darkAmt)%3B%0A%20%20%20%20color.b%20%3D%20Math.max(50%2C%20color.b%20-%20darkAmt)%3B%0A%20%20%20%20return%20RGBA2hex(color)%3B%0A%20%20%7D%0A%20%20function%20RGBA2hex(rgb)%20%7B%0A%20%20%20%20const%20alphaHex%20%3D%20rgb.a%20!%3D%3D%20undefined%20%3F%20Math.round(rgb.a).toString(16).padStart(2%2C%20'0')%20%3A%20''%3B%0A%20%20%20%20return%20%60%23%24%7B(1%20%3C%3C%2024%20%7C%20rgb.r%20%3C%3C%2016%20%7C%20rgb.g%20%3C%3C%208%20%7C%20rgb.b).toString(16).slice(1)%7D%24%7BalphaHex%7D%60%3B%0A%20%20%7D%0A%0A%20%20function%20drawCaptcha()%20%7B%0A%20%20%20%20captchaInfo.userAnswer%20%3D%20%22%22%3B%0A%20%20%20%20%2F%2F%20Easy%20to%20Read%2FDistinguishable%20Fonts%0A%20%20%20%20const%20fonts%20%3D%20%5B%0A%20%20%20%20%20%20%22Arial%22%2C%20%22Helvetica%22%2C%20%22Verdana%22%2C%0A%20%20%20%20%20%20%22Georgia%22%2C%20%22Palatino%22%2C%20%22Comic%20Sans%20MS%22%2C%20%22Arial%20Black%22%2C%20%22Impact%22%2C%0A%20%20%20%20%20%20%22Sans%20Serif%22%2C%20%22Serif%22%2C%20%22Handwriting%22%2C%20%22Marker%22%2C%20%22Curly%22%2C%20%22Pixel%22%0A%20%20%20%20%5D%3B%0A%0A%20%20%20%20const%20container%20%3D%20document.createElement(%22div%22)%3B%0A%20%20%20%20container.style.cssText%20%3D%20%60width%3A%20100%25%3B%20height%3A%20100%25%3B%20background-color%3A%20rgba(0%2C%200%2C%200%2C%20%24%7BvisSetting.focusMode%20%3F%200.5%20%3A%200%7D)%3B%60%3B%0A%20%20%20%20container.id%20%3D%20%22SPcaptchaBox%22%3B%0A%20%20%20%20container.style.position%20%3D%20%22fixed%22%3B%0A%20%20%20%20container.style.transform%20%3D%20%22translate(-50%25%2C%20-50%25)%22%3B%0A%20%20%20%20container.style.pointerEvents%20%3D%20%22auto%22%3B%0A%20%20%20%20container.style.fontFamily%20%3D%20visSetting.font%3B%0A%0A%20%20%20%20const%20canvas%20%3D%20document.createElement(%22canvas%22)%3B%0A%20%20%20%20canvas.width%20%3D%20200%3B%0A%20%20%20%20canvas.height%20%3D%20100%3B%0A%20%20%20%20const%20ctx%20%3D%20canvas.getContext(%222d%22)%3B%0A%20%20%20%20const%20capTxt%20%3D%20generateCaptchaText(captchaInfo.difficulty)%3B%0A%0A%20%20%20%20%2F%2F%20Draw%20Lines%0A%20%20%20%20for%20(let%20l%20%3D%200%3B%20l%20%3C%20captchaInfo.difficulty%20*%203%3B%20l%2B%2B)%20%7B%0A%20%20%20%20%20%20ctx.strokeStyle%20%3D%20randomHex(6%20-%20captchaInfo.difficulty)%3B%0A%20%20%20%20%20%20ctx.lineWidth%20%3D%20Math.random()%20*%201.5%20%2B%201%3B%0A%20%20%20%20%20%20ctx.beginPath()%3B%0A%20%20%20%20%20%20ctx.moveTo(Math.random()%20*%20canvas.width%2C%20Math.random()%20*%20canvas.height)%3B%0A%20%20%20%20%20%20ctx.lineTo(Math.random()%20*%20canvas.width%2C%20Math.random()%20*%20canvas.height)%3B%0A%20%20%20%20%20%20ctx.stroke()%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20%2F%2F%20Draw%20Letters%0A%20%20%20%20const%20startX%20%3D%20100%20-%20(capTxt.length%20*%2010)%3B%0A%20%20%20%20const%20startY%20%3D%20canvas.height%20%2F%202%3B%0A%20%20%20%20const%20spacing%20%3D%20(80%20-%20(capTxt.length%20*%205))%20%2F%202%3B%0A%20%20%20%20for%20(let%20i%20%3D%200%3B%20i%20%3C%20capTxt.length%3B%20i%2B%2B)%20%7B%0A%20%20%20%20%20%20const%20convertDiff%20%3D%20captchaInfo.difficulty%20*%2020%3B%0A%20%20%20%20%20%20const%20xPos%20%3D%20startX%20%2B%20i%20*%20spacing%20%2B%20Math.random()%20*%2010%20-%205%3B%0A%20%20%20%20%20%20const%20yPos%20%3D%20startY%20%2B%20Math.random()%20*%20convertDiff%20-%20(convertDiff%20%2F%202)%3B%0A%20%20%20%20%0A%20%20%20%20%20%20const%20fontSize%20%3D%20Math.floor(Math.random()%20*%2020)%20%2B%2020%3B%0A%20%20%20%20%20%20const%20font%20%3D%20fonts%5BMath.floor(Math.random()%20*%20fonts.length)%5D%3B%0A%20%20%20%20%20%20ctx.font%20%3D%20%60%24%7BfontSize%7Dpx%20%24%7Bfont%7D%60%3B%0A%20%20%20%20%20%20ctx.fillStyle%20%3D%20randomHex(captchaInfo.difficulty)%3B%0A%20%20%20%20%20%20ctx.textBaseline%20%3D%20%22middle%22%3B%0A%20%20%20%20%20%20ctx.textAlign%20%3D%20%22center%22%3B%0A%20%20%20%20%20%20ctx.save()%3B%0A%20%20%20%20%20%20ctx.translate(xPos%2C%20yPos)%3B%0A%20%20%20%20%20%20const%20diffRange%20%3D%20%7B%201%3A%20Math.PI%20%2F%208%2C%202%3A%20Math.PI%20%2F%206%2C%203%3A%20Math.PI%20%2F%205%20%7D%3B%0A%20%20%20%20%20%20const%20rotRange%20%3D%20diffRange%5BcaptchaInfo.difficulty%5D%3B%0A%20%20%20%20%20%20ctx.rotate(Math.random()%20*%20rotRange%20*%202%20-%20rotRange)%3B%0A%20%20%20%20%20%20ctx.fillText(capTxt%5Bi%5D%2C%200%2C%200)%3B%0A%20%20%20%20%20%20ctx.restore()%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20const%20imgContain%20%3D%20document.createElement(%22div%22)%3B%0A%20%20%20%20imgContain.style.position%20%3D%20%22absolute%22%3B%0A%20%20%20%20imgContain.style.top%20%3D%20%2240%25%22%3B%0A%20%20%20%20imgContain.style.left%20%3D%20%2250%25%22%3B%0A%20%20%20%20imgContain.style.transform%20%3D%20%22translate(-50%25%2C%20-60%25)%22%3B%0A%20%20%20%20imgContain.style.backgroundColor%20%3D%20visSetting%5B%22image%20background%22%5D%3B%0A%20%20%20%20imgContain.style.zIndex%20%3D%20%223%22%3B%0A%20%20%20%20imgContain.style.border%20%3D%20%605px%20solid%20%24%7BvisSetting%5B%22image%20frame%22%5D%7D%60%3B%0A%20%20%20%20imgContain.style.borderRadius%20%3D%20%2215px%22%3B%0A%0A%20%20%20%20const%20captchaImage%20%3D%20document.createElement(%22img%22)%3B%0A%20%20%20%20const%20captchaURI%20%3D%20canvas.toDataURL()%3B%0A%20%20%20%20captchaInfo.lastImg%20%3D%20captchaURI%3B%0A%20%20%20%20captchaImage.src%20%3D%20captchaURI%3B%0A%20%20%20%20captchaImage.style.userDrag%20%3D%20%22none%22%3B%0A%20%20%20%20captchaImage.style.webkitUserDrag%20%3D%20%22none%22%3B%0A%20%20%20%20captchaImage.style.userSelect%20%3D%20%22none%22%3B%0A%20%20%20%20captchaImage.style.mozUserSelect%20%3D%20%22none%22%3B%0A%20%20%20%20captchaImage.style.webkitUserSelect%20%3D%20%22none%22%3B%0A%20%20%20%20captchaImage.style.msUserSelect%20%3D%20%22none%22%3B%0A%20%20%20%20imgContain.appendChild(captchaImage)%3B%0A%20%20%20%20container.appendChild(imgContain)%3B%0A%0A%20%20%20%20const%20input%20%3D%20document.createElement(%22input%22)%3B%0A%20%20%20%20input.type%20%3D%20%22text%22%3B%0A%20%20%20%20input.placeholder%20%3D%20%22Enter%20CAPTCHA%22%3B%0A%20%20%20%20input.style.position%20%3D%20%22absolute%22%3B%0A%20%20%20%20input.style.top%20%3D%20%2260%25%22%3B%0A%20%20%20%20input.style.left%20%3D%20%2250%25%22%3B%0A%20%20%20%20input.style.transform%20%3D%20%22translate(-50%25%2C%20-50%25)%22%3B%0A%20%20%20%20input.style.width%20%3D%20%22200px%22%3B%0A%20%20%20%20input.style.zIndex%20%3D%20%222%22%3B%0A%20%20%20%20input.style.textAlign%20%3D%20%22center%22%3B%0A%20%20%20%20input.style.borderRadius%20%3D%20%2210px%22%3B%0A%20%20%20%20input.style.padding%20%3D%20%225px%2015px%22%3B%0A%20%20%20%20input.style.border%20%3D%20%605px%20solid%20%24%7BvisSetting%5B%22input%20frame%22%5D%7D%60%3B%0A%20%20%20%20input.style.background%20%3D%20visSetting%5B%22input%20background%22%5D%3B%0A%20%20%20%20input.style.color%20%3D%20visSetting%5B%22input%20text%22%5D%3B%0A%20%20%20%20container.appendChild(input)%3B%0A%0A%20%20%20%20const%20submitButton%20%3D%20document.createElement(%22button%22)%3B%0A%20%20%20%20submitButton.textContent%20%3D%20%22Submit%22%3B%0A%20%20%20%20submitButton.style.position%20%3D%20%22absolute%22%3B%0A%20%20%20%20submitButton.style.top%20%3D%20%2270%25%22%3B%0A%20%20%20%20submitButton.style.left%20%3D%20%2250%25%22%3B%0A%20%20%20%20submitButton.style.transform%20%3D%20%22translate(-50%25%2C%20-20%25)%22%3B%0A%20%20%20%20submitButton.style.background%20%3D%20visSetting%5B%22button%20background%20(normal)%22%5D%3B%0A%20%20%20%20submitButton.style.border%20%3D%20%605px%20solid%20%24%7BvisSetting%5B%22button%20frame%22%5D%7D%60%3B%0A%20%20%20%20submitButton.style.zIndex%20%3D%20%222%22%3B%0A%20%20%20%20submitButton.style.borderRadius%20%3D%20%2210px%22%3B%0A%20%20%20%20submitButton.style.padding%20%3D%20%225px%2015px%22%3B%0A%20%20%20%20submitButton.style.fontWeight%20%3D%20%22600%22%3B%0A%20%20%20%20submitButton.style.color%20%3D%20visSetting%5B%22button%20text%22%5D%3B%0A%20%20%20%20container.appendChild(submitButton)%3B%0A%20%20%0A%20%20%20%20function%20handleSubmit()%20%7B%0A%20%20%20%20%20%20container.style.pointerEvents%20%3D%20%22none%22%3B%0A%20%20%20%20%20%20captchaInfo.userAnswer%20%3D%20input.value%3B%0A%20%20%20%20%20%20captchaInfo.passed%20%3D%20input.value%20%3D%3D%3D%20capTxt%3B%0A%20%20%20%20%20%20if%20(visSetting.autoClose)%20%7B%0A%20%20%20%20%20%20%20%20render.removeOverlay(container)%3B%0A%20%20%20%20%20%20%20%20captchaInfo.answer%20%3D%20capTxt%3B%0A%20%20%20%20%20%20%20%20currentCaptcha%20%3D%20null%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20vm.runtime.startHats(%22SPcaptcha_whenAnswered%22)%3B%0A%20%20%20%20%7D%0A%20%20%20%20submitButton.addEventListener(%22click%22%2C%20handleSubmit)%3B%0A%20%20%20%20submitButton.addEventListener(%22mouseenter%22%2C%20function()%20%7B%20submitButton.style.background%20%3D%20visSetting%5B%22button%20background%20(hover)%22%5D%20%7D)%3B%0A%20%20%20%20submitButton.addEventListener(%22mouseleave%22%2C%20function()%20%7B%20submitButton.style.background%20%3D%20visSetting%5B%22button%20background%20(normal)%22%5D%20%7D)%3B%0A%20%20%20%20input.addEventListener(%22keydown%22%2C%20function(event)%20%7B%0A%20%20%20%20%20%20if%20(event.key%20%3D%3D%3D%20%22Enter%22)%20%7B%0A%20%20%20%20%20%20%20%20event.preventDefault()%3B%0A%20%20%20%20%20%20%20%20handleSubmit()%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D)%3B%0A%20%20%20%20render.addOverlay(container%2C%20%22scale-centered%22)%3B%0A%20%20%20%20input.focus()%3B%0A%20%20%20%20currentCaptcha%20%3D%20container%3B%0A%20%20%7D%0A%0A%20%20class%20SPcaptcha%20%7B%0A%20%20%20%20constructor()%20%7B%0A%20%20%20%20%20%20vm.runtime.on(%22PROJECT_START%22%2C%20()%20%3D%3E%20%7B%20this.closeCaptcha()%20%7D)%3B%0A%20%20%20%20%20%20vm.runtime.on(%22PROJECT_STOP_ALL%22%2C%20()%20%3D%3E%20%7B%20this.closeCaptcha()%20%7D)%3B%0A%0A%20%20%20%20%20%20%2F%2F%20Helper%20Function%20to%20Prevent%20Users%20from%20auto-passing%20Captchas%0A%20%20%20%20%20%20%2F%2F%20Of%20course%2C%20theyre%20might%20be%20other%20workarounds%20but%20%3A%2F%0A%20%20%20%20%20%20vm.runtime.on(%22BEFORE_EXECUTE%22%2C%20()%20%3D%3E%20%7B%0A%20%20%20%20%20%20%20%20%2F%2F%20Currently%20I%20just%20reset%20the%20function%2C%20perhaps%20we%20could%20stop%20the%20project%2C%20but%20whatever%0A%20%20%20%20%20%20%20%20const%20openUserPass%20%3D%20vm.runtime._primitives.SPcaptcha_userPassed.toString()%3B%0A%20%20%20%20%20%20%20%20if%20(internalUserPass%20%26%26%20openUserPass%20!%3D%3D%20internalUserPass.toString())%20%7B%0A%20%20%20%20%20%20%20%20%20%20vm.runtime._primitives.SPcaptcha_userPassed%20%3D%20eval(internalUserPass.toString())%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20%20%20const%20openAnswer%20%3D%20vm.runtime._primitives.SPcaptcha_getAnswer.toString()%3B%0A%20%20%20%20%20%20%20%20if%20(internalAnswer%20%26%26%20openAnswer%20!%3D%3D%20internalAnswer.toString())%20%7B%0A%20%20%20%20%20%20%20%20%20%20vm.runtime._primitives.SPcaptcha_getAnswer%20%3D%20eval(internalAnswer.toString())%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20%20%20const%20openUserAnswer%20%3D%20vm.runtime._primitives.SPcaptcha_getResponse.toString()%3B%0A%20%20%20%20%20%20%20%20if%20(internalUserAnswer%20%26%26%20openUserAnswer%20!%3D%3D%20internalUserAnswer.toString())%20%7B%0A%20%20%20%20%20%20%20%20%20%20vm.runtime._primitives.SPcaptcha_getResponse%20%3D%20eval(internalUserAnswer.toString())%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D)%3B%0A%20%20%20%20%7D%0A%20%20%20%20getInfo()%20%7B%0A%20%20%20%20%20%20return%20%7B%0A%20%20%20%20%20%20%20%20id%3A%20%22SPcaptcha%22%2C%0A%20%20%20%20%20%20%20%20name%3A%20%22Captchas%22%2C%0A%20%20%20%20%20%20%20%20color1%3A%20%22%23606E90%22%2C%0A%20%20%20%20%20%20%20%20menuIconURI%2C%0A%20%20%20%20%20%20%20%20blockIconURI%2C%0A%20%20%20%20%20%20%20%20blocks%3A%20%5B%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22openCaptcha%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22open%20%5BDIFF%5D%20Captcha%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20arguments%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20DIFF%3A%20%7B%20type%3A%20Scratch.ArgumentType.STRING%2C%20menu%3A%20%22DIFFICULTY%22%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22openCaptchaWait%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22open%20%5BDIFF%5D%20Captcha%20and%20wait%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20arguments%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20DIFF%3A%20%7B%20type%3A%20Scratch.ArgumentType.STRING%2C%20menu%3A%20%22DIFFICULTY%22%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22closeCaptcha%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22close%20Captchas%22%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22whenAnswered%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.EVENT%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20isEdgeActivated%3A%20false%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22when%20Captcha%20answered%22%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22captchaOpen%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.BOOLEAN%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22is%20Captcha%20open%3F%22%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%22---%22%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22userPassed%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.BOOLEAN%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22last%20Captcha%20passed%3F%22%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22getAnswer%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.REPORTER%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22last%20Captcha%20answer%22%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22getResponse%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.REPORTER%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22last%20Submitted%20answer%22%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22getDiff%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.REPORTER%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22current%20Captcha%20difficulty%22%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22lastImage%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.REPORTER%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22last%20Captcha%20image%22%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%20blockType%3A%20Scratch.BlockType.LABEL%2C%20text%3A%20%22Visuals%20and%20Colors%22%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22toggleFunction%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22toggle%20%5BFUNC%5D%20%5BSETTING%5D%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20arguments%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20FUNC%3A%20%7B%20type%3A%20Scratch.ArgumentType.STRING%2C%20menu%3A%20%22FUNCTIONS%22%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20SETTING%3A%20%7B%20type%3A%20Scratch.ArgumentType.STRING%2C%20menu%3A%20%22TOGGLE%22%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%22---%22%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22resetColors%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22reset%20Captcha%20visuals%22%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22setFont%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22set%20Captcha%20font%20to%20%5BFONT%5D%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20arguments%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20FONT%3A%20%7B%20type%3A%20Scratch.ArgumentType.STRING%2C%20menu%3A%20%22FONTS%22%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22setColor%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22set%20%5BTHING%5D%20to%20%5BCOLOR%5D%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20arguments%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20THING%3A%20%7B%20type%3A%20Scratch.ArgumentType.STRING%2C%20menu%3A%20%22ELEMENTS%22%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20COLOR%3A%20%7B%20type%3A%20Scratch.ArgumentType.COLOR%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%22---%22%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22resetEffect%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22reset%20Captcha%20effects%22%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22setEffect%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22set%20%5BEFFECT%5D%20of%20Captcha%20to%20%5BVALUE%5D%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20arguments%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20VALUE%3A%20%7B%20type%3A%20Scratch.ArgumentType.NUMBER%2C%20defaultValue%3A%205%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20EFFECT%3A%20%7B%20type%3A%20Scratch.ArgumentType.STRING%2C%20menu%3A%20%22EFFECTS%22%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22getEffect%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.REPORTER%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22current%20%5BEFFECT%5D%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20arguments%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20EFFECT%3A%20%7B%20type%3A%20Scratch.ArgumentType.STRING%2C%20menu%3A%20%22EFFECTS%22%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%20%20menus%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20FONTS%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20acceptReporters%3A%20true%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20items%3A%20%22allFonts%22%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20DIFFICULTY%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20acceptReporters%3A%20true%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20items%3A%20%5B%22easy%22%2C%20%22medium%22%2C%20%22hard%22%5D%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20TOGGLE%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20acceptReporters%3A%20true%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20items%3A%20%5B%22on%22%2C%20%22off%22%5D%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20FUNCTIONS%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20acceptReporters%3A%20true%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20items%3A%20%5B%22focus%20mode%22%2C%20%22auto%20close%22%5D%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20ELEMENTS%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20acceptReporters%3A%20true%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20items%3A%20allElements%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20EFFECTS%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20acceptReporters%3A%20true%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20items%3A%20%5B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22blur%22%2C%20%22saturation%22%2C%20%22contrast%22%2C%20%22brightness%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22hue%22%2C%20%22opacity%22%2C%20%22sepia%22%2C%20%22invert%22%2C%20%22direction%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22scale%20x%22%2C%20%22scale%20y%22%2C%20%22skew%20x%22%2C%20%22skew%20y%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%5D%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20allFonts()%20%7B%0A%20%20%20%20%20%20const%20customFonts%20%3D%20Scratch.vm.runtime.fontManager%20%3F%20Scratch.vm.runtime.fontManager.getFonts().map((i)%20%3D%3E%20(%7B%20text%3A%20i.name%2C%20value%3A%20i.family%20%7D))%20%3A%20%5B%5D%3B%0A%20%20%20%20%20%20return%20%5B...fontMenu%2C%20...customFonts%5D%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20openCaptcha(args%2C%20util)%20%7B%0A%20%20%20%20%20%20%2F%2F%20remove%20any%20existing%20Captchas%0A%20%20%20%20%20%20render.removeOverlay(currentCaptcha)%3B%0A%20%20%20%20%20%20currentCaptcha%20%3D%20%22pending%22%3B%20%2F%2F%20Immediately%20Do%20this%20to%20Yield%20the%20Block%0A%20%20%20%20%20%20captchaInfo.difficulty%20%3D%20args.DIFF%20%3D%3D%3D%20%22easy%22%20%3F%201%20%3A%20args.DIFF%20%3D%3D%3D%20%22medium%22%20%3F%202%20%3A%203%3B%0A%20%20%20%20%20%20drawCaptcha()%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20openCaptchaWait(args%2C%20util)%20%7B%0A%20%20%20%20%20%20if%20(typeof%20util.stackFrame.captchaWait%20%3D%3D%3D%20%22undefined%22)%20%7B%0A%20%20%20%20%20%20%20%20%2F%2F%20remove%20any%20existing%20Captchas%0A%20%20%20%20%20%20%20%20render.removeOverlay(currentCaptcha)%3B%0A%20%20%20%20%20%20%20%20util.stackFrame.captchaWait%20%3D%20true%3B%0A%20%20%20%20%20%20%20%20currentCaptcha%20%3D%20%22pending%22%3B%20%2F%2F%20Immediately%20Do%20this%20to%20Yield%20the%20Block%0A%20%20%20%20%20%20%20%20captchaInfo.difficulty%20%3D%20args.DIFF%20%3D%3D%3D%20%22easy%22%20%3F%201%20%3A%20args.DIFF%20%3D%3D%3D%20%22medium%22%20%3F%202%20%3A%203%3B%0A%20%20%20%20%20%20%20%20drawCaptcha()%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20if%20(currentCaptcha)%20util.yield()%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20closeCaptcha()%20%7B%0A%20%20%20%20%20%20captchaInfo%20%3D%20%7B%20...captchaInfo%2C%20passed%3A%20false%20%7D%3B%0A%20%20%20%20%20%20render.removeOverlay(currentCaptcha)%3B%0A%20%20%20%20%20%20currentCaptcha%20%3D%20null%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20userPassed()%20%7B%20return%20captchaInfo.passed%20%7D%0A%20%20%20%20getAnswer()%20%7B%20return%20captchaInfo.answer%20%7D%0A%20%20%20%20getResponse()%20%7B%20return%20captchaInfo.userAnswer%20%7D%0A%20%20%20%20getDiff()%20%7B%0A%20%20%20%20%20%20const%20diff%20%3D%20captchaInfo.difficulty%3B%0A%20%20%20%20%20%20return%20diff%20%3D%3D%3D%201%20%3F%20%22easy%22%20%3A%20diff%20%3D%3D%3D%202%20%3F%20%22medium%22%20%3A%20%22hard%22%3B%0A%20%20%20%20%7D%0A%20%20%20%20captchaOpen()%20%7B%20return%20Scratch.Cast.toBoolean(currentCaptcha)%20%7D%0A%20%20%20%20lastImage()%20%7B%20return%20captchaInfo.lastImg%20%7D%0A%0A%20%20%20%20toggleFunction(args)%20%7B%0A%20%20%20%20%20%20const%20con%20%3D%20args.SETTING%20%3D%3D%3D%20%22on%22%3B%0A%20%20%20%20%20%20switch%20(args.FUNC)%20%7B%0A%20%20%20%20%20%20%20%20case%20%22focus%20mode%22%3A%20%7B%20visSetting.focusMode%20%3D%20con%3B%20break%20%7D%0A%20%20%20%20%20%20%20%20case%20%22auto%20close%22%3A%20%7B%20visSetting.autoClose%20%3D%20con%3B%20break%20%7D%0A%20%20%20%20%20%20%20%20default%3A%20%2F*%20prolly%20will%20add%20more%20later%20*%2F%20break%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20if%20(currentCaptcha)%20this.updateCaptchaHtml()%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20resetEffect(args)%20%7B%0A%20%20%20%20%20%20visSetting%20%3D%20%7B%0A%20%20%20%20%20%20%20%20...visSetting%2C%0A%20%20%20%20%20%20%20%20blur%3A%20%5B0%2C%20%22px%22%5D%2C%20brightness%3A%20%5B0%2C%20%22%22%5D%2C%0A%20%20%20%20%20%20%20%20contrast%3A%20%5B0%2C%20%22%22%5D%2C%20%22hue-rotate%22%3A%20%5B0%2C%20%22deg%22%5D%2C%0A%20%20%20%20%20%20%20%20invert%3A%20%5B0%2C%20%22%22%5D%2C%20opacity%3A%20%5B0%2C%20%22%22%5D%2C%0A%20%20%20%20%20%20%20%20saturate%3A%20%5B100%2C%20%22%22%5D%2C%20sepia%3A%20%5B0%2C%20%22%22%5D%2C%0A%20%20%20%20%20%20%20%20scale%3A%20%5B100%2C%20%22%22%2C%20100%2C%20%22%22%5D%2C%20%20rotate%3A%20%5B90%2C%20%22deg%22%5D%2C%0A%20%20%20%20%20%20%20%20skewX%3A%20%5B0%2C%20%22deg%22%5D%2C%20skewY%3A%20%5B0%2C%20%22deg%22%5D%0A%20%20%20%20%20%20%7D%3B%0A%20%20%20%20%20%20if%20(!currentCaptcha)%20return%3B%0A%20%20%20%20%20%20currentCaptcha.style.transform%20%3D%20this.callVisUpdate(%22transform%22)%3B%0A%20%20%20%20%20%20currentCaptcha.style.filter%20%3D%20this.callVisUpdate(%22filter%22)%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20setEffect(args)%20%7B%0A%20%20%20%20%20%20if%20(!currentCaptcha)%20return%3B%0A%20%20%20%20%20%20let%20effect%20%3D%20args.EFFECT%3B%0A%20%20%20%20%20%20if%20(effect%20%3D%3D%3D%20%22direction%22)%20effect%20%3D%20%22rotate%22%3B%0A%20%20%20%20%20%20if%20(effect%20%3D%3D%3D%20%22saturation%22)%20effect%20%3D%20%22saturate%22%3B%0A%20%20%20%20%20%20if%20(effect%20%3D%3D%3D%20%22skew%20x%22)%20effect%20%3D%20%22skewX%22%3B%0A%20%20%20%20%20%20if%20(effect%20%3D%3D%3D%20%22skew%20y%22)%20effect%20%3D%20%22skewY%22%3B%0A%20%20%20%20%20%20if%20(effect.startsWith(%22scale%22))%20effect%20%3D%20%22scale%22%3B%0A%20%20%20%20%20%20const%20key%20%3D%20visSetting%5Beffect%5D%3B%0A%20%20%20%20%20%20if%20(key%20!%3D%3D%20undefined)%20%7B%0A%20%20%20%20%20%20%20%20key%5Bargs.EFFECT%20%3D%3D%3D%20%22scale%20y%22%20%3F%202%20%3A%200%5D%20%3D%20Scratch.Cast.toNumber(args.VALUE)%0A%20%20%20%20%20%20%20%20currentCaptcha.style.transform%20%3D%20this.callVisUpdate(%22transform%22)%3B%0A%20%20%20%20%20%20%20%20currentCaptcha.style.filter%20%3D%20this.callVisUpdate(%22filter%22)%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%0A%20%20%20%20resetColors(args)%20%7B%0A%20%20%20%20%20%20visSetting%20%3D%20%7B%0A%20%20%20%20%20%20%20%20...visSetting%2C%0A%20%20%20%20%20%20%20%20%22image%20frame%22%20%3A%20%22%23cccccc%22%2C%20%22image%20background%22%20%3A%20%22%23000000%22%2C%0A%20%20%20%20%20%20%20%20%22input%20frame%22%20%3A%20%22%23cccccc%22%2C%20%22input%20background%22%20%3A%20%22linear-gradient(%23ffffff%2C%20%23b3b3b3)%22%2C%20%22input%20text%22%20%3A%20%22%23000000%22%2C%0A%20%20%20%20%20%20%20%20%22button%20frame%22%20%3A%20%22%23cccccc%22%2C%20%22button%20text%22%20%3A%20%22%23000000%22%2C%0A%20%20%20%20%20%20%20%20%22button%20background%20(hover)%22%20%3A%20%22linear-gradient(%23b3b3b3%2C%20%23ffffff)%22%2C%20%22button%20background%20(normal)%22%20%3A%20%22linear-gradient(%23ffffff%2C%20%23b3b3b3)%22%0A%20%20%20%20%20%20%7D%3B%0A%20%20%20%20%20%20if%20(currentCaptcha)%20this.updateCaptchaHtml()%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20setFont(args)%20%7B%0A%20%20%20%20%20%20visSetting.font%20%3D%20xmlEscape(args.FONT)%3B%0A%20%20%20%20%20%20if%20(currentCaptcha)%20this.updateCaptchaHtml()%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20setColor(args)%20%7B%0A%20%20%20%20%20%20if%20(allElements.indexOf(args.THING)%20%3D%3D%3D%20-1)%20return%3B%0A%20%20%20%20%20%20visSetting%5Bargs.THING%5D%20%3D%20xmlEscape(args.COLOR)%3B%0A%20%20%20%20%20%20if%20(currentCaptcha)%20this.updateCaptchaHtml()%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20%2F%2F%20Helper%20function%20to%20update%20visuals%2Fcolors%0A%20%20%20%20updateCaptchaHtml()%20%7B%0A%20%20%20%20%20%20currentCaptcha.style.fontFamily%20%3D%20visSetting.font%3B%0A%20%20%20%20%20%20currentCaptcha.style.backgroundColor%20%3D%20%60rgba(0%2C%200%2C%200%2C%20%24%7BvisSetting.focusMode%20%3F%200.5%20%3A%200%7D)%60%3B%0A%20%20%20%20%20%20const%20children%20%3D%20currentCaptcha.childNodes%3B%0A%20%20%20%20%20%20%2F%2F%20Image%0A%20%20%20%20%20%20children%5B0%5D.style.backgroundColor%20%3D%20visSetting%5B%22image%20background%22%5D%3B%0A%20%20%20%20%20%20children%5B0%5D.style.border%20%3D%20%605px%20solid%20%24%7BvisSetting%5B%22image%20frame%22%5D%7D%60%3B%0A%20%20%20%20%20%20%2F%2F%20Input%0A%20%20%20%20%20%20children%5B1%5D.style.border%20%3D%20%605px%20solid%20%24%7BvisSetting%5B%22input%20frame%22%5D%7D%60%3B%0A%20%20%20%20%20%20children%5B1%5D.style.background%20%3D%20visSetting%5B%22input%20background%22%5D%3B%0A%20%20%20%20%20%20children%5B1%5D.style.color%20%3D%20visSetting%5B%22input%20text%22%5D%3B%0A%20%20%20%20%20%20%2F%2F%20Submit%0A%20%20%20%20%20%20children%5B2%5D.style.background%20%3D%20visSetting%5B%22button%20background%20(normal)%22%5D%3B%0A%20%20%20%20%20%20children%5B2%5D.style.border%20%3D%20%605px%20solid%20%24%7BvisSetting%5B%22button%20frame%22%5D%7D%60%3B%0A%20%20%20%20%20%20children%5B2%5D.style.color%20%3D%20visSetting%5B%22button%20text%22%5D%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20%2F%2F%20Helper%20function%20to%20write%20the%20Effects%20as%20a%20HTML%20string%0A%20%20%20%20callVisUpdate(type)%20%7B%0A%20%20%20%20%20%20let%20array%20%3D%20%5B%5D%3B%0A%20%20%20%20%20%20let%20string%20%3D%20%22%22%3B%0A%20%20%20%20%20%20if%20(type%20%3D%3D%3D%20%22transform%22)%20%7B%0A%20%20%20%20%20%20%20%20array%20%3D%20%5B%22scale%22%2C%20%22rotate%22%2C%20%22skewX%22%2C%20%22skewY%22%5D%3B%0A%20%20%20%20%20%20%20%20string%20%2B%3D%20%22translate(-50%25%2C%20-50%25)%20%22%3B%0A%20%20%20%20%20%20%7D%20else%20%7B%20array%20%3D%20%5B%22blur%22%2C%20%22brightness%22%2C%20%22contrast%22%2C%20%22hue-rotate%22%2C%20%22invert%22%2C%20%22opacity%22%2C%20%22saturate%22%2C%20%22sepia%22%5D%20%7D%0A%20%20%20%20%20%20for%20(var%20i%20%3D%200%3B%20i%20%3C%20array.length%3B%20i%2B%2B)%20%7B%0A%20%20%20%20%20%20%20%20const%20name%20%3D%20array%5Bi%5D%3B%0A%20%20%20%20%20%20%20%20const%20key%20%3D%20visSetting%5Bname%5D%3B%0A%0A%20%20%20%20%20%20%20%20let%20value%20%3D%20key%5B0%5D%3B%0A%20%20%20%20%20%20%20%20if%20(name%20%3D%3D%3D%20%22opacity%22)%20value%20%3D%201%20-%20(value%20%2F%20100)%3B%0A%20%20%20%20%20%20%20%20if%20(name%20%3D%3D%3D%20%22saturate%22%20%7C%7C%20name%20%3D%3D%3D%20%22invert%22%20%7C%7C%20name%20%3D%3D%3D%20%22sepia%22)%20value%20%3D%20value%20%2F%20100%3B%0A%20%20%20%20%20%20%20%20if%20(name%20%3D%3D%3D%20%22contrast%22%20%7C%7C%20name%20%3D%3D%3D%20%22brightness%22)%20value%20%3D%20(value%20%2B%20100)%20%2F%20100%3B%0A%20%20%20%20%20%20%20%20if%20(name%20%3D%3D%3D%20%22rotate%22)%20value%20%3D%20value%20-%2090%3B%0A%20%20%20%20%20%20%20%20if%20(name%20%3D%3D%3D%20%22scale%22)%20value%20%3D%20%60%24%7Bvalue%20%2F%20100%7D%2C%20%24%7Bkey%5B2%5D%20%2F%20100%7D%60%3B%0A%20%20%20%20%20%20%20%20string%20%2B%3D%20%60%24%7Bname%7D(%24%7Bvalue%7D%24%7Bkey%5B1%5D%7D)%20%60%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20return%20string%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20getEffect(args)%20%7B%0A%20%20%20%20%20%20let%20effect%20%3D%20args.EFFECT%3B%0A%20%20%20%20%20%20if%20(effect%20%3D%3D%3D%20%22direction%22)%20effect%20%3D%20%22rotate%22%3B%0A%20%20%20%20%20%20if%20(effect%20%3D%3D%3D%20%22saturation%22)%20effect%20%3D%20%22saturate%22%3B%0A%20%20%20%20%20%20if%20(effect%20%3D%3D%3D%20%22skew%20x%22)%20effect%20%3D%20%22skewX%22%3B%0A%20%20%20%20%20%20if%20(effect%20%3D%3D%3D%20%22skew%20y%22)%20effect%20%3D%20%22skewY%22%3B%0A%20%20%20%20%20%20if%20(effect.startsWith(%22scale%22))%20effect%20%3D%20%22scale%22%3B%0A%20%20%20%20%20%20return%20visSetting%5Beffect%5D%5Bargs.EFFECT%20%3D%3D%3D%20%22scale%20y%22%20%3F%202%20%3A%200%5D%20%3F%3F%20%22%22%3B%0A%20%20%20%20%7D%0A%20%20%7D%0A%0A%20%20Scratch.extensions.register(new%20SPcaptcha())%3B%0A%0A%20%20%2F%2F%20Security%20Feature%20Enabler%0A%20%20function%20checkPrimitives()%20%7B%0A%20%20%20%20internalUserPass%20%3D%20vm.runtime._primitives.SPcaptcha_userPassed%3B%0A%20%20%20%20internalUserAnswer%20%3D%20vm.runtime._primitives.SPcaptcha_getResponse%3B%0A%20%20%20%20internalAnswer%20%3D%20vm.runtime._primitives.SPcaptcha_getAnswer%3B%0A%20%20%20%20if%20(internalUserPass%20%3D%3D%3D%20undefined%20%7C%7C%20internalUserAnswer%20%3D%3D%3D%20undefined%20%7C%7C%20internalAnswer%20%3D%3D%3D%20undefined)%20%7B%0A%20%20%20%20%20%20setTimeout(checkPrimitives%2C%2010)%3B%0A%20%20%20%20%7D%0A%20%20%7D%0A%20%20checkPrimitives()%3B%0A%7D)(Scratch)%3B%0A%20%7D)(Scratch)%3B"]) {
+        vm.extensionManager.loadExtensionURL(extension);
+      }
+
+      vm.runtime.on('PROJECT_RUN_STOP', () => {
+        if (!vm.isPaused || !vm.isPaused()) {
+          window.close();
+        }
+      });
+      vm.runtime.isProjectPermissionManagerDisabled = true;
+      
+    } catch (e) {
+      handleError(e);
+    }
+  </script>
+  
+  
+    <script>
+      const getProjectData = (function() {
+        const storage = scaffolding.storage;
+        storage.onprogress = (total, loaded) => {
+          setProgress(interpolate(0.2, 0.98, loaded / total));
+        };
+        
+        storage.addWebStore(
+          [
+            storage.AssetType.ImageVector,
+            storage.AssetType.ImageBitmap,
+            storage.AssetType.Sound,
+            storage.AssetType.Font
+          ].filter(i => i),
+          (asset) => new URL('./assets/' + asset.assetId + '.' + asset.dataFormat, location).href
+        );
+        return () => new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = () => {
+          resolve(xhr.response);
+        };
+        xhr.onerror = () => {
+          if (location.protocol === 'file:') {
+            reject(new Error('Zip environment must be used from a website, not from a file URL.'));
+          } else {
+            reject(new Error('Request to load project data failed.'));
+          }
+        };
+        xhr.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setProgress(interpolate(0.1, 0.2, e.loaded / e.total));
+          }
+        };
+        xhr.responseType = 'arraybuffer';
+        xhr.open('GET', "./assets/project.json");
+        xhr.send();
+      });
+      })();
+    </script>
+  <script>
+    const run = async () => {
+      const projectData = await getProjectData();
+      await scaffolding.loadProject(projectData);
+      setProgress(1);
+      loadingScreen.hidden = true;
+      if (true) {
+        scaffolding.start();
+      } else {
+        launchScreen.hidden = false;
+        launchScreen.addEventListener('click', () => {
+          launchScreen.hidden = true;
+          scaffolding.start();
+        });
+        launchScreen.focus();
+      }
+    };
+    run().catch(handleError);
+  </script>
+</body>
+</html>
